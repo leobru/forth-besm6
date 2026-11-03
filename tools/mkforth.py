@@ -8,7 +8,7 @@ Directives (comment cards to BEMSH, so the source stays readable):
                       (the next card must carry LABEL); I = IMMEDIATE.
   *LAST               becomes  ПОСЛ КОНД А(<last header>)
   *DIGITS             GOST code -> digit value table (ЦИФТ), digit value
-                      -> GOST code table (ЦИФВ), name length -> words (НСЛТ)
+                      -> GOST code table (ЦИФВ)
   *TEXT LABEL "text"  counted GOST string
   *PRELUDE            lib/core.fs at ПРЕЛ as ТЕКСТ П'...' cards: lines
                       joined by a blank, \\ comment lines dropped
@@ -55,11 +55,12 @@ def digit_tables():
     for i in range(0, len(val), 8):
         w = sum(v << 6 * k for k, v in enumerate(val[i:i + 8]))
         out.append("%s\tКОНД\tВ'%016o'" % ('ЦИФТ' if i == 0 else '', w))
-    out += ['* значение цифры -> ГОСТ-код литеры']
+    out += ['* значение цифры U -> ГОСТ-код литеры: 4 поля по 12 разрядов,',
+            '* слово U/4, поле U MOD 4 СПРАВА']
     chars = gost.encode('0123456789' + LETTERS)
-    out += ["%s\tКОНД\tВ'%o'" % ('ЦИФВ' if i == 0 else '', c) for i, c in enumerate(chars)]
-    out += ['* длина имени -> число слов счётной строки: (n+6)/6']
-    out += ["%s\tКОНД\tВ'%o'" % ('НСЛТ' if n == 0 else '', (n + 6) // 6) for n in range(32)]
+    for i in range(0, len(chars), 4):
+        w = sum(c << 12 * k for k, c in enumerate(chars[i:i + 4]))
+        out.append("%s\tКОНД\tВ'%016o'" % ('ЦИФВ' if i == 0 else '', w))
     return out
 
 

@@ -115,7 +115,7 @@ is `КОНД П'0;0000'М40В'201'`.
 - Overflow beyond 41 bits is not modular.
 
 **Memory map.**
-- 00010–00303: constants, tables and variables, kept below 07777,
+- 00010–00202: constants, tables and variables, kept below 07777,
   which short-address instructions can reach.
 - Then the kernel code and the GOST text of `lib/core.fs`. The image must
   end below 04000; `make` checks this.
