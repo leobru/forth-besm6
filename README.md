@@ -219,3 +219,7 @@ design choices with it: subroutine threading and separate handling of bytes.
   worked at ИТА АН СССР in 1979–1988.
 - No sources or vocabulary listing of Форт-БЭСМ-6 have been found. The book's
   bibliography has no entry for it.
+
+## License
+
+MIT; see [LICENSE.txt](LICENSE.txt).
