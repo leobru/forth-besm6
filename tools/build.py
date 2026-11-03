@@ -64,7 +64,8 @@ RUN = '''шифр 419999^
 
 
 def check_card(path, n, line):
-    assert len(line) <= 72, f'{path}:{n}: card exceeds 72 columns'
+    # BEMSH reads columns 1-64 only (the rest is dropped without an error)
+    assert len(line) <= 64, f'{path}:{n}: card exceeds 64 columns'
     if line and not line[0].isspace() and not line.startswith('*'):
         assert len(line.split()[0]) <= 6, f'{path}:{n}: label exceeds six characters'
 

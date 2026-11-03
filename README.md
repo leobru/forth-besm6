@@ -49,7 +49,7 @@ echo '2 3 + .' | tools/run-dispak.sh -l build/forth.b6
 
 - All text is GOST 10859.
 - **Э71 output.** The terminal output buffer is packed six bytes per word.
-  It ends with 0172 and is padded with 0143, which dispak ignores.
+  It ends with 0172; Э71 ignores the rest of the word.
 - **Э71 input with a prompt.** Text that is still in the output buffer when
   input is requested becomes the prompt. So `." NAME? " PAD 30 ACCEPT`
   prints the question on the same line as the reply.
@@ -98,7 +98,13 @@ carries the data-word tag, and executing it stops the task with
 **Dictionary headers.** Word 0 links to the previous header. Then comes the
 name as a packed counted string; its first byte holds the length, 0200 for
 IMMEDIATE and 0100 while hidden. The code follows. `FIND` compares whole
-words.
+words, padding included, so names are padded with code 0 both here and in
+`WORD`. In the generated BEMSH, names are text constants, and the digit 0
+(code 0) is the padding: `DUP` is `ТЕКСТ П'3DUP00'`, `EXECUTE` is
+`ТЕКСТ П'7EXECUTE0000'`. Lengths from 10 are written by the character with
+that code (`+` is 10, `⏨` is 16, `#` is 28). A byte with no character there
+(lengths 20 and 26, IMMEDIATE) is added by a shift, as in the prelude: `;`
+is `КОНД П'0;0000'М40В'201'`.
 
 **Integers.** Integers follow the v7besm C convention: exponent field 0 and a
 41-bit two's-complement value, so the range is ±2⁴⁰.
@@ -122,8 +128,8 @@ The image starts at 00010 to stay compatible with a future ПУЛЬТ launcher.
 
 ## Source layout
 
-- [forth.be](forth.be): the BEMSH kernel. It has 96 words, including
-  the interpreter, the compiler and the terminal I/O. `lib/core.fs` adds 64.
+- [forth.be](forth.be): the BEMSH kernel. It has 97 words, including
+  the interpreter, the compiler and the terminal I/O. `lib/core.fs` adds 61.
 - [tools/mkforth.py](tools/mkforth.py): turns `*: NAME LABEL [I]` lines into
   dictionary headers and generates the digit and name-length tables. It also
   embeds `lib/core.fs` as readable `ТЕКСТ П'…'` cards (see below).
@@ -139,7 +145,7 @@ blanks into one text, which is cut into `ТЕКСТ П'…'` cards. `\` comment
 lines are dropped: a `П'…'` constant cannot hold the newline that would end
 them. Three BEMSH limits shape the cards:
 - the text must end by column 63 («СИМВОЛОВ >63»), so a card holds at most
-  8 words;
+  8 words (BEMSH reads only columns 1–64 of any card);
 - `?` and `\` end the card, and BEMSH drops the rest of the text without an
   error. A word with either character is written as `КОНД`, with 0 in
   their places and their codes added by shifts:
@@ -150,6 +156,8 @@ them. Three BEMSH limits shape the cards:
 
 - No double-cell or floating-point words, and no `KEY`.
 - `U.` is correct only for values below 2⁴⁰.
+- The output buffer holds 1176 characters. When it fills, it is flushed,
+  and Э71 ends the line there.
 - In interpret mode, `S"` returns a pointer into the source line.
 - `ABORT"`, `."`, `[CHAR]` and `[']` are compile-only.
 - No return-stack overflow check. M12 grows from 074000 and wraps from

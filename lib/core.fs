@@ -34,15 +34,12 @@
 : CELL+ 1+ ;
 : CHARS ;
 : CHAR+ 1+ ;
-: ALIGN ;
-: ALIGNED ;
 : NOT 0= ;
 : ABS DUP 0< IF NEGATE THEN ;
 : MIN 2DUP > IF SWAP THEN DROP ;
 : MAX 2DUP < IF SWAP THEN DROP ;
 : /MOD ( n1 n2 -- rem quot ) 2DUP MOD -ROT / ;
 : 2* 1 LSHIFT ;
-: 2/ DUP 1 RSHIFT SWAP 0< IF [ 1 40 LSHIFT ] LITERAL OR THEN ;
 : U< 2DUP XOR 0< IF NIP 0< ELSE < THEN ;
 : WITHIN ( n lo hi -- flag ) OVER - >R - R> U< ;
 : VARIABLE CREATE 0 , ;

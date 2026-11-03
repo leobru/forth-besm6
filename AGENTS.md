@@ -24,7 +24,9 @@ FORTH for the BESM-6 under dispak.  See README.md for usage and design.
   that must reach the next `ПВ`.
 - Short-address instructions reach only 0–07777 and 070000+: keep all
   variables, constants and tables near the start of the image.
-- Cards: at most 72 columns, labels at most six characters.
+- Cards: BEMSH reads columns 1–64 only and drops the rest without an
+  error (tools/build.py rejects longer cards); labels at most six
+  characters.
 - Text constants `П'…'`: `?` and `\` end the card without any error
   (`tools/chkprelude.py` guards the prelude), and an operand may not pass
   column 63 («СИМВОЛОВ >63»).

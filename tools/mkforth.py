@@ -26,6 +26,11 @@ import gost
 # Characters BEMSH reads inside П'...' (checked in the listing); ? and \
 # end the card, silently.
 TEXTSAFE = set(" !\"'()*+,-./0123456789:;<=>@[]" + 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+SAFECODE = {gost.encode(c)[0]: c for c in TEXTSAFE}
+# Codes with no ASCII input character that BEMSH also reads there: 020 is
+# ⏨, 034 is # (or ≠).  024 (× and \\* give 0121) and 032 (‘ closes the
+# text) cannot be written.  So all name lengths but 20 and 26 are characters.
+SAFECODE.update({0o20: '⏨', 0o34: '#'})
 LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 
@@ -33,9 +38,8 @@ def header_lines(label, prev, name, immediate):
     codes = gost.encode(name)
     assert 0 < len(codes) <= 31, name
     first = len(codes) | (0o200 if immediate else 0)
-    words = gost.words([first] + codes)
     out = ['%s\tКОНД\t%s' % (label, 'А(%s)' % prev if prev else "В'0'")]
-    out += gost.kond(words)
+    out += data_cards([first] + codes)
     return out
 
 
@@ -78,41 +82,47 @@ def prelude_text(path):
     return text + ' ' * (-len(text) % 6)
 
 
-def kond_text(ch):
-    """КОНД operand for 6 characters, some of which end a BEMSH card: they
-    are 0 in П'...' and added as Мshift В'code' (no М0 for the last one):
-    П'Q0QW0W'М32В'136'М8В'175' is "Q?QW\\W"."""
-    lit = ''.join(c if c in TEXTSAFE else '0' for c in ch).replace("'", "''")
+def kond_word(codes):
+    """КОНД operand for one word of 6 GOST codes, as П'...'.  A code with no
+    character BEMSH reads there (? and \\ end the card; also lengths and
+    flags) is 0 in П'...' and is added as Мshift В'code' (no М0 for the
+    last byte): П'Q0QW0W'М32В'136'М8В'175' is "Q?QW\\W"."""
+    lit = ''.join(SAFECODE.get(c, '0') for c in codes).replace("'", "''")
     return "П'%s'" % lit + ''.join(
-        ("М%d" % (8 * (5 - i)) if i < 5 else '') + "В'%o'" % gost.encode(c)[0]
-        for i, c in enumerate(ch) if c not in TEXTSAFE)
+        ("М%d" % (8 * (5 - i)) if i < 5 else '') + "В'%o'" % c
+        for i, c in enumerate(codes) if c not in SAFECODE)
 
 
-def prelude_lines(text):
-    """ТЕКСТ П'...' cards ending by column 63 (BEMSH: «СИМВОЛОВ >63»), so
-    at most 8 words each.  A word with a character that ends a BEMSH card
-    (? and \\) becomes КОНД (kond_text)."""
+def data_cards(codes, label=''):
+    """Cards for GOST codes packed 6 per word, zero padded: runs of words
+    that are all characters become ТЕКСТ П'...' (ending by column 63, BEMSH
+    «СИМВОЛОВ >63»: at most 8 words); other words are КОНД (kond_word).  LABEL goes on the first card."""
+    codes = list(codes) + [0] * (-len(codes) % 6)
     out, run = [], []
 
-    def card(chunks):
-        lab = 'ПРЕЛ' if not out else ''
-        return "%s ТЕКСТ П'%s'" % (lab, ''.join(chunks).replace("'", "''"))
+    def lab():
+        return '' if out else label
 
-    for i in range(0, len(text), 6):
-        ch = text[i:i + 6]
-        if set(ch) <= TEXTSAFE and len(card(run + [ch])) <= 63:
-            run.append(ch)
-            continue
+    def text(words):
+        return "%s ТЕКСТ П'%s'" % (lab(), ''.join(
+            SAFECODE[c] for w in words for c in w).replace("'", "''"))
+
+    def flush():
         if run:
-            out.append(card(run))
-            run = []
-        if set(ch) <= TEXTSAFE:
-            run = [ch]
+            out.append(text(run))
+        run.clear()
+
+    for i in range(0, len(codes), 6):
+        w = codes[i:i + 6]
+        if all(c in SAFECODE for c in w):
+            if len(text(run + [w])) > 63:
+                flush()
+            run.append(w)
         else:
-            out.append(('ПРЕЛ' if not out else '') + ' КОНД ' + kond_text(ch))
-    if run:
-        out.append(card(run))
-    return out or ["ПРЕЛ КОНД В'0'"]
+            flush()
+            out.append('%s КОНД %s' % (lab(), kond_word(w)))
+    flush()
+    return out
 
 
 def main():
@@ -138,10 +148,9 @@ def main():
             _, label, text = line.split(None, 2)
             assert text[0] == '"' and text[-1] == '"', line
             tc = gost.encode(text[1:-1])
-            k = gost.kond(gost.words([len(tc)] + tc))
-            out += [label + k[0]] + k[1:]
+            out += data_cards([len(tc)] + tc, label)
         elif line.strip() == '*PRELUDE':
-            out += prelude_lines(ptext)
+            out += data_cards(gost.encode(ptext), 'ПРЕЛ') or ["ПРЕЛ КОНД В'0'"]
         elif line.strip() == '*PRELEN':
             out.append("ДЛПРЕЛ\tКОНД\tВ'%o'" % len(ptext))
         else:
