@@ -49,8 +49,12 @@ def digit_tables():
         val[d] = d
     for i, ch in enumerate(LETTERS):
         val[gost.encode(ch)[0]] = 10 + i
-    out = ['* ГОСТ-код литеры -> значение цифры (077 - не цифра)']
-    out += ["%s\tКОНД\tВ'%o'" % ('ЦИФТ' if i == 0 else '', v) for i, v in enumerate(val)]
+    val += [0o77] * (-len(val) % 8)
+    out = ['* ГОСТ-код C -> значение цифры (077 - не цифра): 8 полей по 6',
+           '* разрядов, слово C/8, поле C MOD 8 СПРАВА']
+    for i in range(0, len(val), 8):
+        w = sum(v << 6 * k for k, v in enumerate(val[i:i + 8]))
+        out.append("%s\tКОНД\tВ'%016o'" % ('ЦИФТ' if i == 0 else '', w))
     out += ['* значение цифры -> ГОСТ-код литеры']
     chars = gost.encode('0123456789' + LETTERS)
     out += ["%s\tКОНД\tВ'%o'" % ('ЦИФВ' if i == 0 else '', c) for i, c in enumerate(chars)]
