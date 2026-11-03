@@ -1,0 +1,19 @@
+#!/usr/bin/expect --
+# Drive an interactive FORTH session on a pseudo-terminal (as a user would).
+# Usage: tools/dialog.expect   (after make)
+set timeout 20
+spawn tools/run-dispak.sh -l build/forth.b6
+expect "FORTH BESM-6\r\n"
+send ": SQ DUP * ;\r"
+expect " OK\r\n"
+send "7 SQ .\r"
+expect "49  OK\r\n"
+send "CREATE PB 20 ALLOT : ASK .\" NAME? \" PB A>C 30 ACCEPT PB A>C SWAP TYPE CR ;\r"
+expect " OK\r\n"
+send "ASK\r"
+expect "NAME? "
+send "leo\r"
+expect "LEO\r\n"
+send "BYE\r"
+expect eof
+puts "\nDIALOG OK"

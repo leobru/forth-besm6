@@ -1,0 +1,12 @@
+: HELLO ." HELLO, WORLD" CR ; HELLO
+S" ABC" TYPE CR
+S" 2 3 + ." EVALUATE CR
+: EV S" 10 20 * ." EVALUATE ; EV
+\ comment 1 2 3
+( inline comment ) 77 .
+CHAR A . 3 SPACES 1 .
+.( INTERPRETED) CR
+CREATE PAD 20 ALLOT  PAD A>C 30 ACCEPT
+typed line
+PAD A>C SWAP TYPE CR
+BYE

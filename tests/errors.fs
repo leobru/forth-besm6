@@ -1,0 +1,8 @@
+NOSUCH 1 2
+DROP DEPTH .
+: BAD 1 NOSUCH ;
+5 .
+BAD
+: AB ABORT" SHOWN" 7 . ; 0 AB 1 AB 8 .
+.S
+BYE
